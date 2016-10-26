@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@color/grey"
+    android:layout_marginBottom="10dp">
+
+    <RelativeLayout
+        android:id="@+id/app_category_group_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/red"
+        android:padding="15dp"
+        android:layout_marginBottom="10dp">
+
+        <TextView
+            android:id="@+id/app_category_group_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:drawableLeft="@drawable/ic_applications"
+            android:drawablePadding="7dp"
+            android:gravity="center_vertical"
+            android:text="@string/app_name"
+            android:textColor="@color/white"
+            android:textSize="22sp"
+            android:clickable="true"/>
+
+        <LinearLayout
+            android:id="@+id/app_category_group_bullet_container"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            android:orientation="horizontal" />
+
+    </RelativeLayout>
+
+    <com.fluger.app.armenia.util.CategoryItemPageView
+        android:id="@+id/app_category_group_pager"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="10dp" />
+
+</LinearLayout>
