@@ -1,8 +1,5 @@
 package com.fluger.app.armenia.util;
 
-import java.util.ArrayList;
-import org.json.JSONException;
-import org.json.JSONObject;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -16,14 +13,21 @@ import android.view.ViewGroup.LayoutParams;
 import android.widget.ArrayAdapter;
 import android.widget.LinearLayout;
 import android.widget.RatingBar;
+import android.widget.RatingBar.OnRatingBarChangeListener;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.RatingBar.OnRatingBarChangeListener;
+
 import com.fluger.app.armenia.R;
 import com.fluger.app.armenia.activity.SearchResultsActivity;
 import com.fluger.app.armenia.backend.API;
-import com.fluger.app.armenia.backend.API.RequestObserver;
 import com.fluger.app.armenia.manager.AppArmeniaManager;
+import com.loopj.android.http.JsonHttpResponseHandler;
+
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+
+import cz.msebera.android.httpclient.Header;
 
 public class DetailsAdapter extends ArrayAdapter<String> {
 	
@@ -94,10 +98,10 @@ public class DetailsAdapter extends ArrayAdapter<String> {
 						  @Override
 						  public void run() {
 							  
-							  API.postRating(AppArmeniaManager.getInstance().itemDataToBePassed.id, lastRating, new RequestObserver() {
+							  API.postRating(AppArmeniaManager.getInstance().itemDataToBePassed.id, lastRating, new JsonHttpResponseHandler() {
 								
 								@Override
-								public void onSuccess(JSONObject response) throws JSONException {
+                                public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
 									((Activity) context).runOnUiThread(new Runnable() {
 										
 										@Override
@@ -106,11 +110,7 @@ public class DetailsAdapter extends ArrayAdapter<String> {
 										}
 									});
 								}
-								
-								@Override
-								public void onError(String response, Exception e) {
-									
-								}
+
 							});
 						  }
 						}, 2000);
