@@ -1,5 +1,11 @@
 package com.fluger.app.armenia.backend;
 
+import android.os.Environment;
+import android.util.Log;
+
+import com.fluger.app.armenia.util.Constants;
+
+
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -7,12 +13,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
 
-import org.apache.http.util.ByteArrayBuffer;
-
-import android.os.Environment;
-import android.util.Log;
-
-import com.fluger.app.armenia.util.Constants;
+import cz.msebera.android.httpclient.util.ByteArrayBuffer;
 
 public class DowloadManager {
 	private static final int TIMEOUT_CONNECTION = 500;

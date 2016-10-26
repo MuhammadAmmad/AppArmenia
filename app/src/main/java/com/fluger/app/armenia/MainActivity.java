@@ -8,8 +8,8 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.view.KeyEvent;
+
 import com.fluger.app.armenia.backend.API;
-import com.fluger.app.armenia.backend.API.RequestObserver;
 import com.fluger.app.armenia.data.AppCategoryItemData;
 import com.fluger.app.armenia.data.BannerData;
 import com.fluger.app.armenia.manager.AppArmeniaManager;
@@ -17,14 +17,16 @@ import com.fluger.app.armenia.util.Constants;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.gcm.GoogleCloudMessaging;
+import com.loopj.android.http.JsonHttpResponseHandler;
 import com.nostra13.universalimageloader.cache.disc.naming.Md5FileNameGenerator;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 import com.nostra13.universalimageloader.core.assist.QueueProcessingType;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
+
+import cz.msebera.android.httpclient.Header;
 
 public class MainActivity extends Activity {
 
@@ -92,182 +94,181 @@ public class MainActivity extends Activity {
 
     private void loadData() {
         if (!AppArmeniaManager.getInstance().isDataLoaded) {
-            API.getTrendingItems(0, 15, new RequestObserver() {
+            API.getTrendingItems(0, 15, new JsonHttpResponseHandler() {
                 @Override
-                public void onSuccess(JSONObject response) throws JSONException {
-                    JSONArray result = response.getJSONArray("values");
-                    for (int i = 0; i < result.length(); i++) {
-                        JSONObject categoryJson = result.getJSONObject(i);
-                        int category = categoryJson.optInt("category", 0);
-                        JSONArray categoryItemsJson = categoryJson.getJSONArray("items");
-                        for (int j = 0; j < categoryItemsJson.length(); j++) {
-                            AppCategoryItemData categoryItemData = new AppCategoryItemData(categoryItemsJson.getJSONObject(j));
-                            categoryItemData.category = category;
-                            AppArmeniaManager.getInstance().categoriesTrendingData.get(category - 1).children.add(categoryItemData);
-                        }
-                    }
-
-                    isTrendingDataLoaded = true;
-                    onDataLoadListener.onDataLoadComplete();
-                }
-
-                @Override
-                public void onError(String response, Exception e) {
-
-                }
-            });
-
-            API.getFBanners(0, 15, new RequestObserver() {
-                @Override
-                public void onSuccess(JSONObject response) throws JSONException {
-                    JSONArray result = response.getJSONArray("values");
-                    for (int i = 0; i < result.length(); i++) {
-                        JSONObject itemJson = result.getJSONObject(i);
-                        BannerData bannerData = new BannerData();
-                        bannerData.setImage(itemJson.getString("image"));
-                        bannerData.setTitle(itemJson.getString("title"));
-                        bannerData.setTag(itemJson.getString("tag"));
-                        AppArmeniaManager.getInstance().fBannersData.add(bannerData);
-                    }
-
-                    isfBannerDataLoaded = true;
-                    onDataLoadListener.onDataLoadComplete();
-                }
-
-                @Override
-                public void onError(String response, Exception e) {
-
-                }
-            });
-
-            API.getBBanners(0, 15, new RequestObserver() {
-                @Override
-                public void onSuccess(JSONObject response) throws JSONException {
-                    JSONArray result = response.getJSONArray("values");
-                    for (int i = 0; i < result.length(); i++) {
-                        JSONObject itemJson = result.getJSONObject(i);
-                        BannerData bannerData = new BannerData();
-                        bannerData.setImage(itemJson.getString("image"));
-                        bannerData.setUrl(itemJson.getString("url"));
-                        bannerData.setTitle(itemJson.getString("title"));
-                        AppArmeniaManager.getInstance().bBannersData.add(bannerData);
-                    }
-
-                    isbBannerDataLoaded = true;
-                    onDataLoadListener.onDataLoadComplete();
-                }
-
-                @Override
-                public void onError(String response, Exception e) {
-
-                }
-            });
-
-            API.getAppsList(5, 0, new RequestObserver() {
-
-                @Override
-                public void onSuccess(JSONObject response) throws JSONException {
-                    JSONArray result = response.getJSONArray("values");
-                    for (int i = 0; i < result.length(); i++) {
-                        JSONObject categoryJson = result.getJSONObject(i);
-                        String type = categoryJson.optString("type", "");
-                        JSONArray categoryItemsJson = categoryJson.getJSONArray("items");
-                        for (int j = 0; j < categoryItemsJson.length(); j++) {
-                            AppCategoryItemData categoryItemData = new AppCategoryItemData(categoryItemsJson.getJSONObject(j));
-                            categoryItemData.type = type;
-                            categoryItemData.category = Constants.APPLICATIONS_CATEGORY_POSITION;
-                            if (!categoryItemData.androidUrl.isEmpty()) {
-                            	AppArmeniaManager.getInstance().applicationsData.get(type).add(categoryItemData);
+                public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                    try {
+                        JSONArray result = response.getJSONArray("values");
+                        for (int i = 0; i < result.length(); i++) {
+                            JSONObject categoryJson = result.getJSONObject(i);
+                            int category = categoryJson.optInt("category", 0);
+                            JSONArray categoryItemsJson = categoryJson.getJSONArray("items");
+                            for (int j = 0; j < categoryItemsJson.length(); j++) {
+                                AppCategoryItemData categoryItemData = new AppCategoryItemData(categoryItemsJson.getJSONObject(j));
+                                categoryItemData.category = category;
+                                AppArmeniaManager.getInstance().categoriesTrendingData.get(category - 1).children.add(categoryItemData);
                             }
                         }
-                    }
 
-                    isApplicationsDataLoaded = true;
-                    onDataLoadListener.onDataLoadComplete();
+                        isTrendingDataLoaded = true;
+                        onDataLoadListener.onDataLoadComplete();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }
 
-                @Override
-                public void onError(String response, Exception e) {
+            });
 
+            API.getFBanners(0, 15, new JsonHttpResponseHandler() {
+                @Override
+                public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                    try {
+                        JSONArray result = response.getJSONArray("values");
+                        for (int i = 0; i < result.length(); i++) {
+                            JSONObject itemJson = result.getJSONObject(i);
+                            BannerData bannerData = new BannerData();
+                            bannerData.setImage(itemJson.getString("image"));
+                            bannerData.setTitle(itemJson.getString("title"));
+                            bannerData.setTag(itemJson.getString("tag"));
+                            AppArmeniaManager.getInstance().fBannersData.add(bannerData);
+                        }
+
+                        isfBannerDataLoaded = true;
+                        onDataLoadListener.onDataLoadComplete();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }
             });
 
-            API.getWallpapersList(5, 0, new RequestObserver() {
-
+            API.getBBanners(0, 15, new JsonHttpResponseHandler() {
                 @Override
-                public void onSuccess(JSONObject response) throws JSONException {
-                    JSONArray result = response.getJSONArray("values");
-                    for (int i = 0; i < result.length(); i++) {
-                        JSONObject categoryJson = result.getJSONObject(i);
-                        String type = categoryJson.optString("type", "");
-                        JSONArray categoryItemsJson = categoryJson.getJSONArray("items");
-                        for (int j = 0; j < categoryItemsJson.length(); j++) {
-                            AppCategoryItemData categoryItemData = new AppCategoryItemData(categoryItemsJson.getJSONObject(j));
-                            categoryItemData.type = type;
-                            categoryItemData.category = Constants.WALLPAPERS_CATEGORY_POSITION;
-                            AppArmeniaManager.getInstance().wallpapersData.get(type).add(categoryItemData);
+                public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                    try {
+                        JSONArray result = response.getJSONArray("values");
+                        for (int i = 0; i < result.length(); i++) {
+                            JSONObject itemJson = result.getJSONObject(i);
+                            BannerData bannerData = new BannerData();
+                            bannerData.setImage(itemJson.getString("image"));
+                            bannerData.setUrl(itemJson.getString("url"));
+                            bannerData.setTitle(itemJson.getString("title"));
+                            AppArmeniaManager.getInstance().bBannersData.add(bannerData);
                         }
+
+                        isbBannerDataLoaded = true;
+                        onDataLoadListener.onDataLoadComplete();
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
-                    isWallpapersDataLoaded = true;
-                    onDataLoadListener.onDataLoadComplete();
                 }
 
-                @Override
-                public void onError(String response, Exception e) {
-
-                }
             });
 
-            API.getRingtonesList(5, 0, new RequestObserver() {
+            API.getAppsList(5, 0, new JsonHttpResponseHandler() {
 
                 @Override
-                public void onSuccess(JSONObject response) throws JSONException {
-                    JSONArray result = response.getJSONArray("values");
-                    for (int i = 0; i < result.length(); i++) {
-                        JSONObject categoryJson = result.getJSONObject(i);
-                        String type = categoryJson.optString("type", "");
-                        JSONArray categoryItemsJson = categoryJson.getJSONArray("items");
-                        for (int j = 0; j < categoryItemsJson.length(); j++) {
-                            AppCategoryItemData categoryItemData = new AppCategoryItemData(categoryItemsJson.getJSONObject(j));
-                            categoryItemData.type = type;
-                            categoryItemData.category = Constants.RINGTONES_CATEGORY_POSITION;
-                            AppArmeniaManager.getInstance().ringtonesData.get(type).add(categoryItemData);
+                public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                    try {
+                        JSONArray result = response.getJSONArray("values");
+                        for (int i = 0; i < result.length(); i++) {
+                            JSONObject categoryJson = result.getJSONObject(i);
+                            String type = categoryJson.optString("type", "");
+                            JSONArray categoryItemsJson = categoryJson.getJSONArray("items");
+                            for (int j = 0; j < categoryItemsJson.length(); j++) {
+                                AppCategoryItemData categoryItemData = new AppCategoryItemData(categoryItemsJson.getJSONObject(j));
+                                categoryItemData.type = type;
+                                categoryItemData.category = Constants.APPLICATIONS_CATEGORY_POSITION;
+                                if (!categoryItemData.androidUrl.isEmpty()) {
+                                    AppArmeniaManager.getInstance().applicationsData.get(type).add(categoryItemData);
+                                }
+                            }
                         }
+
+                        isApplicationsDataLoaded = true;
+                        onDataLoadListener.onDataLoadComplete();
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
-                    isRingtonesDataLoaded = true;
-                    onDataLoadListener.onDataLoadComplete();
                 }
 
-                @Override
-                public void onError(String response, Exception e) {
-
-                }
             });
 
-            API.getNotificationsList(5, 0, new RequestObserver() {
+            API.getWallpapersList(5, 0, new JsonHttpResponseHandler() {
 
                 @Override
-                public void onSuccess(JSONObject response) throws JSONException {
-                    JSONArray result = response.getJSONArray("values");
-                    for (int i = 0; i < result.length(); i++) {
-                        JSONObject categoryJson = result.getJSONObject(i);
-                        String type = categoryJson.optString("type", "");
-                        JSONArray categoryItemsJson = categoryJson.getJSONArray("items");
-                        for (int j = 0; j < categoryItemsJson.length(); j++) {
-                            AppCategoryItemData categoryItemData = new AppCategoryItemData(categoryItemsJson.getJSONObject(j));
-                            categoryItemData.type = type;
-                            categoryItemData.category = Constants.NOTIFICATIONS_CATEGORY_POSITION;
-                            AppArmeniaManager.getInstance().notificationsData.get(type).add(categoryItemData);
+                public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                    try {
+                        JSONArray result = response.getJSONArray("values");
+                        for (int i = 0; i < result.length(); i++) {
+                            JSONObject categoryJson = result.getJSONObject(i);
+                            String type = categoryJson.optString("type", "");
+                            JSONArray categoryItemsJson = categoryJson.getJSONArray("items");
+                            for (int j = 0; j < categoryItemsJson.length(); j++) {
+                                AppCategoryItemData categoryItemData = new AppCategoryItemData(categoryItemsJson.getJSONObject(j));
+                                categoryItemData.type = type;
+                                categoryItemData.category = Constants.WALLPAPERS_CATEGORY_POSITION;
+                                AppArmeniaManager.getInstance().wallpapersData.get(type).add(categoryItemData);
+                            }
                         }
+                        isWallpapersDataLoaded = true;
+                        onDataLoadListener.onDataLoadComplete();
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
-                    isNotificationsDataLoaded = true;
-                    onDataLoadListener.onDataLoadComplete();
                 }
+
+            });
+
+            API.getRingtonesList(5, 0, new JsonHttpResponseHandler() {
 
                 @Override
-                public void onError(String response, Exception e) {
-
+                public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                    try {
+                        JSONArray result = response.getJSONArray("values");
+                        for (int i = 0; i < result.length(); i++) {
+                            JSONObject categoryJson = result.getJSONObject(i);
+                            String type = categoryJson.optString("type", "");
+                            JSONArray categoryItemsJson = categoryJson.getJSONArray("items");
+                            for (int j = 0; j < categoryItemsJson.length(); j++) {
+                                AppCategoryItemData categoryItemData = new AppCategoryItemData(categoryItemsJson.getJSONObject(j));
+                                categoryItemData.type = type;
+                                categoryItemData.category = Constants.RINGTONES_CATEGORY_POSITION;
+                                AppArmeniaManager.getInstance().ringtonesData.get(type).add(categoryItemData);
+                            }
+                        }
+                        isRingtonesDataLoaded = true;
+                        onDataLoadListener.onDataLoadComplete();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }
+
+            });
+
+            API.getNotificationsList(5, 0, new JsonHttpResponseHandler() {
+
+                @Override
+                public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                    try {
+                        JSONArray result = response.getJSONArray("values");
+                        for (int i = 0; i < result.length(); i++) {
+                            JSONObject categoryJson = result.getJSONObject(i);
+                            String type = categoryJson.optString("type", "");
+                            JSONArray categoryItemsJson = categoryJson.getJSONArray("items");
+                            for (int j = 0; j < categoryItemsJson.length(); j++) {
+                                AppCategoryItemData categoryItemData = new AppCategoryItemData(categoryItemsJson.getJSONObject(j));
+                                categoryItemData.type = type;
+                                categoryItemData.category = Constants.NOTIFICATIONS_CATEGORY_POSITION;
+                                AppArmeniaManager.getInstance().notificationsData.get(type).add(categoryItemData);
+                            }
+                        }
+                        isNotificationsDataLoaded = true;
+                        onDataLoadListener.onDataLoadComplete();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+
             });
         } else {
             startAppCategoriesActivity();
