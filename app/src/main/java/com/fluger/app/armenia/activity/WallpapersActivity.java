@@ -1,9 +1,5 @@
 package com.fluger.app.armenia.activity;
 
-import java.util.ArrayList;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 import android.app.ActionBar;
 import android.app.ActionBar.Tab;
 import android.app.Activity;
@@ -26,19 +22,27 @@ import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.ScrollView;
 import android.widget.SearchView;
+
 import com.fluger.app.armenia.HomeActivity;
 import com.fluger.app.armenia.R;
 import com.fluger.app.armenia.activity.details.WallpaperDetailsActivity;
 import com.fluger.app.armenia.backend.API;
-import com.fluger.app.armenia.backend.API.RequestObserver;
 import com.fluger.app.armenia.data.AppCategoryItemData;
 import com.fluger.app.armenia.data.TagItemData;
 import com.fluger.app.armenia.manager.AppArmeniaManager;
 import com.fluger.app.armenia.util.CategoriesAdapter;
 import com.fluger.app.armenia.util.Constants;
 import com.fluger.app.armenia.util.Utils;
+import com.loopj.android.http.JsonHttpResponseHandler;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.assist.ImageSize;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+
+import cz.msebera.android.httpclient.Header;
 
 public class WallpapersActivity extends Activity implements ActionBar.TabListener {
 	private int position;
@@ -57,15 +61,18 @@ public class WallpapersActivity extends Activity implements ActionBar.TabListene
 
 		getItemsListByType(Constants.TYPE_TRENDING);
 
-		API.getTagsList(Constants.WALLPAPERS_CATEGORY_POSITION, new RequestObserver() {
+		API.getTagsList(Constants.WALLPAPERS_CATEGORY_POSITION, new JsonHttpResponseHandler() {
 
 			@Override
-			public void onSuccess(JSONObject response) throws JSONException {
-				JSONArray tagsJson = response.getJSONArray("values");
-				for (int i = 0; i < tagsJson.length(); i++) {
-					categories.add(new TagItemData(tagsJson.getJSONObject(i)));
-				}
-
+            public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                try {
+                    JSONArray tagsJson = response.getJSONArray("values");
+                    for (int i = 0; i < tagsJson.length(); i++) {
+                        categories.add(new TagItemData(tagsJson.getJSONObject(i)));
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
 				WallpapersActivity.this.runOnUiThread(new Runnable() {
 
 					@Override
@@ -75,10 +82,6 @@ public class WallpapersActivity extends Activity implements ActionBar.TabListene
 				});
 			}
 
-			@Override
-			public void onError(String response, Exception e) {
-
-			}
 		});
 
 		categoriesAdapter = new CategoriesAdapter(this, R.layout.item_category_list, categories);
@@ -88,23 +91,27 @@ public class WallpapersActivity extends Activity implements ActionBar.TabListene
 
 			@Override
 			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-				API.getWallpapersSearchList(5, 0, categories.get(position).tag, new RequestObserver() {
+				API.getWallpapersSearchList(5, 0, categories.get(position).tag, new JsonHttpResponseHandler() {
 
 					@Override
-					public void onSuccess(JSONObject response) throws JSONException {
-						AppArmeniaManager.getInstance().resetWallpapersData();
-						JSONArray result = response.getJSONArray("values");
-						for (int i = 0; i < result.length(); i++) {
-							JSONObject categoryJson = result.getJSONObject(i);
-							String type = categoryJson.optString("type", "");
-							JSONArray categoryItemsJson = categoryJson.getJSONArray("items");
-							for (int j = 0; j < categoryItemsJson.length(); j++) {
-								AppCategoryItemData categoryItemData = new AppCategoryItemData(categoryItemsJson.getJSONObject(j));
-								categoryItemData.type = type;
-								categoryItemData.category = Constants.WALLPAPERS_CATEGORY_POSITION;
-								AppArmeniaManager.getInstance().wallpapersData.get(type).add(categoryItemData);
-							}
-						}
+                    public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                        try {
+                            AppArmeniaManager.getInstance().resetWallpapersData();
+                            JSONArray result = response.getJSONArray("values");
+                            for (int i = 0; i < result.length(); i++) {
+                                JSONObject categoryJson = result.getJSONObject(i);
+                                String type = categoryJson.optString("type", "");
+                                JSONArray categoryItemsJson = categoryJson.getJSONArray("items");
+                                for (int j = 0; j < categoryItemsJson.length(); j++) {
+                                    AppCategoryItemData categoryItemData = new AppCategoryItemData(categoryItemsJson.getJSONObject(j));
+                                    categoryItemData.type = type;
+                                    categoryItemData.category = Constants.WALLPAPERS_CATEGORY_POSITION;
+                                    AppArmeniaManager.getInstance().wallpapersData.get(type).add(categoryItemData);
+                                }
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
 
 						WallpapersActivity.this.runOnUiThread(new Runnable() {
 
@@ -115,10 +122,6 @@ public class WallpapersActivity extends Activity implements ActionBar.TabListene
 						});
 					}
 
-					@Override
-					public void onError(String response, Exception e) {
-
-					}
 				});
 			}
 		});

@@ -1,9 +1,5 @@
 package com.fluger.app.armenia.activity;
 
-import java.util.ArrayList;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 import android.app.ActionBar;
 import android.app.ActionBar.Tab;
 import android.app.Activity;
@@ -20,12 +16,20 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.widget.ListView;
 import android.widget.SearchView;
+
 import com.fluger.app.armenia.R;
 import com.fluger.app.armenia.backend.API;
-import com.fluger.app.armenia.backend.API.RequestObserver;
 import com.fluger.app.armenia.data.AppCategoryItemData;
 import com.fluger.app.armenia.util.Constants;
 import com.fluger.app.armenia.util.ItemsAdapter;
+import com.loopj.android.http.JsonHttpResponseHandler;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+
+import cz.msebera.android.httpclient.Header;
 
 public class SearchResultsActivity extends Activity implements ActionBar.TabListener {
 	
@@ -99,28 +103,32 @@ public class SearchResultsActivity extends Activity implements ActionBar.TabList
 			items.clear();
 			tabs.clear();
 			
-			API.search(5, 0, query, new RequestObserver() {
+			API.search(5, 0, query, new JsonHttpResponseHandler() {
 				
 				@Override
-				public void onSuccess(JSONObject response) throws JSONException {
-					JSONArray resultJsonArray = response.getJSONArray("values");
-					for (int i = 0; i < resultJsonArray.length(); i++) {
-						int category = resultJsonArray.getJSONObject(i).optInt("category", 0);
-						JSONArray itemsJsonArray = resultJsonArray.getJSONObject(i).getJSONArray("items");
-						if (itemsJsonArray.length() > 0) {
-							tabs.add(category);
-							for (int j = 0; j < itemsJsonArray.length(); j++) {
-								AppCategoryItemData itemData = new AppCategoryItemData(itemsJsonArray.getJSONObject(j));
-								itemData.category = category;
-								if (items.get(category) != null) {
-									items.get(category).add(itemData);
-								} else {
-									items.put(category, new ArrayList<AppCategoryItemData>());
-									items.get(category).add(itemData);
-								}
-							}
-						}
-					}
+                public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                    try {
+                        JSONArray resultJsonArray = response.getJSONArray("values");
+                        for (int i = 0; i < resultJsonArray.length(); i++) {
+                            int category = resultJsonArray.getJSONObject(i).optInt("category", 0);
+                            JSONArray itemsJsonArray = resultJsonArray.getJSONObject(i).getJSONArray("items");
+                            if (itemsJsonArray.length() > 0) {
+                                tabs.add(category);
+                                for (int j = 0; j < itemsJsonArray.length(); j++) {
+                                    AppCategoryItemData itemData = new AppCategoryItemData(itemsJsonArray.getJSONObject(j));
+                                    itemData.category = category;
+                                    if (items.get(category) != null) {
+                                        items.get(category).add(itemData);
+                                    } else {
+                                        items.put(category, new ArrayList<AppCategoryItemData>());
+                                        items.get(category).add(itemData);
+                                    }
+                                }
+                            }
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
 					runOnUiThread(new Runnable() {
 						
 						@Override
@@ -142,11 +150,7 @@ public class SearchResultsActivity extends Activity implements ActionBar.TabList
 						}
 					});
 				}
-				
-				@Override
-				public void onError(String response, Exception e) {
-					
-				}
+
 			});
 
             if(intent.getBooleanExtra("notif",false)) {

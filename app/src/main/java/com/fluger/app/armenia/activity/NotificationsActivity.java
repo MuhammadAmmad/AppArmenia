@@ -1,9 +1,5 @@
 package com.fluger.app.armenia.activity;
 
-import java.util.ArrayList;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 import android.app.ActionBar;
 import android.app.ActionBar.Tab;
 import android.app.Activity;
@@ -20,11 +16,11 @@ import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ListView;
 import android.widget.SearchView;
+
 import com.fluger.app.armenia.HomeActivity;
 import com.fluger.app.armenia.R;
 import com.fluger.app.armenia.activity.details.NotificationDetailsActivity;
 import com.fluger.app.armenia.backend.API;
-import com.fluger.app.armenia.backend.API.RequestObserver;
 import com.fluger.app.armenia.data.AppCategoryItemData;
 import com.fluger.app.armenia.data.TagItemData;
 import com.fluger.app.armenia.manager.AppArmeniaManager;
@@ -32,6 +28,15 @@ import com.fluger.app.armenia.util.CategoriesAdapter;
 import com.fluger.app.armenia.util.Constants;
 import com.fluger.app.armenia.util.ItemsAdapter;
 import com.fluger.app.armenia.util.Utils;
+import com.loopj.android.http.JsonHttpResponseHandler;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+
+import cz.msebera.android.httpclient.Header;
 
 public class NotificationsActivity extends Activity implements ActionBar.TabListener {
 
@@ -51,14 +56,20 @@ public class NotificationsActivity extends Activity implements ActionBar.TabList
 
 		getItemsListByType(Constants.TYPE_TRENDING);
 
-		API.getTagsList(Constants.NOTIFICATIONS_CATEGORY_POSITION, new RequestObserver() {
+		API.getTagsList(Constants.NOTIFICATIONS_CATEGORY_POSITION, new JsonHttpResponseHandler() {
 
 			@Override
-			public void onSuccess(JSONObject response) throws JSONException {
-				JSONArray tagsJson = response.getJSONArray("values");
-				for (int i = 0; i < tagsJson.length(); i++) {
-					categories.add(new TagItemData(tagsJson.getJSONObject(i)));
-				}
+            public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                JSONArray tagsJson = null;
+                try {
+                    tagsJson = response.getJSONArray("values");
+
+                    for (int i = 0; i < tagsJson.length(); i++) {
+                        categories.add(new TagItemData(tagsJson.getJSONObject(i)));
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
 
 				NotificationsActivity.this.runOnUiThread(new Runnable() {
 
@@ -69,10 +80,6 @@ public class NotificationsActivity extends Activity implements ActionBar.TabList
 				});
 			}
 
-			@Override
-			public void onError(String response, Exception e) {
-
-			}
 		});
 
 		categoriesAdapter = new CategoriesAdapter(this, R.layout.item_category_list, categories);
@@ -82,23 +89,27 @@ public class NotificationsActivity extends Activity implements ActionBar.TabList
 
 			@Override
 			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-				API.getNotificationsSearchList(5, 0, categories.get(position).tag, new RequestObserver() {
+				API.getNotificationsSearchList(5, 0, categories.get(position).tag, new JsonHttpResponseHandler() {
 
 					@Override
-					public void onSuccess(JSONObject response) throws JSONException {
-						AppArmeniaManager.getInstance().resetNotificationsData();
-						JSONArray result = response.getJSONArray("values");
-						for (int i = 0; i < result.length(); i++) {
-							JSONObject categoryJson = result.getJSONObject(i);
-							String type = categoryJson.optString("type", "");
-							JSONArray categoryItemsJson = categoryJson.getJSONArray("items");
-							for (int j = 0; j < categoryItemsJson.length(); j++) {
-								AppCategoryItemData categoryItemData = new AppCategoryItemData(categoryItemsJson.getJSONObject(j));
-								categoryItemData.type = type;
-								categoryItemData.category = Constants.NOTIFICATIONS_CATEGORY_POSITION;
-								AppArmeniaManager.getInstance().notificationsData.get(type).add(categoryItemData);
-							}
-						}
+                    public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                        try {
+                            AppArmeniaManager.getInstance().resetNotificationsData();
+                            JSONArray result = response.getJSONArray("values");
+                            for (int i = 0; i < result.length(); i++) {
+                                JSONObject categoryJson = result.getJSONObject(i);
+                                String type = categoryJson.optString("type", "");
+                                JSONArray categoryItemsJson = categoryJson.getJSONArray("items");
+                                for (int j = 0; j < categoryItemsJson.length(); j++) {
+                                    AppCategoryItemData categoryItemData = new AppCategoryItemData(categoryItemsJson.getJSONObject(j));
+                                    categoryItemData.type = type;
+                                    categoryItemData.category = Constants.NOTIFICATIONS_CATEGORY_POSITION;
+                                    AppArmeniaManager.getInstance().notificationsData.get(type).add(categoryItemData);
+                                }
+                            }
+                        } catch (Exception e) {
+
+                        }
 
 						NotificationsActivity.this.runOnUiThread(new Runnable() {
 
@@ -109,10 +120,6 @@ public class NotificationsActivity extends Activity implements ActionBar.TabList
 						});
 					}
 
-					@Override
-					public void onError(String response, Exception e) {
-
-					}
 				});
 			}
 		});

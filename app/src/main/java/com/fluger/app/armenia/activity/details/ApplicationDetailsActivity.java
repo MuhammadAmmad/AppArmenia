@@ -4,14 +4,6 @@
 
 package com.fluger.app.armenia.activity.details;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Locale;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import android.app.Activity;
 import android.app.SearchManager;
 import android.content.Context;
@@ -43,15 +35,25 @@ import com.fluger.app.armenia.R;
 import com.fluger.app.armenia.activity.SearchResultsActivity;
 import com.fluger.app.armenia.activity.SettingsActivity;
 import com.fluger.app.armenia.backend.API;
-import com.fluger.app.armenia.backend.API.RequestObserver;
 import com.fluger.app.armenia.data.AppCategoryItemData;
 import com.fluger.app.armenia.manager.AppArmeniaManager;
 import com.fluger.app.armenia.util.Constants;
 import com.fluger.app.armenia.util.FileDownloaderTask;
 import com.fluger.app.armenia.util.ImageAdapter;
 import com.fluger.app.armenia.util.Utils;
+import com.loopj.android.http.JsonHttpResponseHandler;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.assist.ImageSize;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Locale;
+
+import cz.msebera.android.httpclient.Header;
 
 @SuppressWarnings("deprecation")
 public class ApplicationDetailsActivity extends Activity {
@@ -166,23 +168,18 @@ public class ApplicationDetailsActivity extends Activity {
 					  public void run() {
 						  
 						  int rating = (int) ((RatingBar) findViewById(R.id.applications_item_rating_bar)).getRating();
-						  API.postRating(itemData.id, rating, new RequestObserver() {
-							
-							@Override
-							public void onSuccess(JSONObject response) throws JSONException {
-								ApplicationDetailsActivity.this.runOnUiThread(new Runnable() {
-									
-									@Override
-									public void run() {
-										Toast.makeText(ApplicationDetailsActivity.this, "Rated!", Toast.LENGTH_LONG).show();
-									}
-								});
-							}
-							
-							@Override
-							public void onError(String response, Exception e) {
-								
-							}
+						  API.postRating(itemData.id, rating, new JsonHttpResponseHandler() {
+
+                              @Override
+                              public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                                  ApplicationDetailsActivity.this.runOnUiThread(new Runnable() {
+
+                                      @Override
+                                      public void run() {
+                                          Toast.makeText(ApplicationDetailsActivity.this, "Rated!", Toast.LENGTH_LONG).show();
+                                      }
+                                  });
+                              }
 						});
 					  }
 					}, 2000);
@@ -190,23 +187,29 @@ public class ApplicationDetailsActivity extends Activity {
 			}
 		});
 		
-		API.getAppsScreenshots(itemData.id, new RequestObserver() {
+		API.getAppsScreenshots(itemData.id, new JsonHttpResponseHandler() {
 
 			@Override
-			public void onSuccess(JSONObject response) throws JSONException {
-				JSONArray screenShotsUrlJson = response.getJSONArray("values");
-				screenshots = new String[screenShotsUrlJson.length()];
-				for (int i = 0; i < screenShotsUrlJson.length(); i++) {
-					final String url = screenShotsUrlJson.getJSONObject(i).optString("image", "");
-					screenshots[i] = itemData.id + url.substring(url.lastIndexOf("/"));
-					ApplicationDetailsActivity.this.runOnUiThread(new Runnable() {
+            public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                JSONArray screenShotsUrlJson = null;
+                try {
+                    screenShotsUrlJson = response.getJSONArray("values");
 
-						@Override
-						public void run() {
-							(new FileDownloaderTask(Constants.APPLICATIONS_CATEGORY_POSITION, null)).execute(Constants.FILES_URL + url);
-						}
-					});
-				}
+                    screenshots = new String[screenShotsUrlJson.length()];
+                    for (int i = 0; i < screenShotsUrlJson.length(); i++) {
+                        final String url = screenShotsUrlJson.getJSONObject(i).optString("image", "");
+                        screenshots[i] = itemData.id + url.substring(url.lastIndexOf("/"));
+                        ApplicationDetailsActivity.this.runOnUiThread(new Runnable() {
+
+                            @Override
+                            public void run() {
+                                (new FileDownloaderTask(Constants.APPLICATIONS_CATEGORY_POSITION, null)).execute(Constants.FILES_URL + url);
+                            }
+                        });
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
 
 				ApplicationDetailsActivity.this.runOnUiThread(new Runnable() {
 
@@ -215,11 +218,6 @@ public class ApplicationDetailsActivity extends Activity {
 						initGallery();
 					}
 				});
-			}
-
-			@Override
-			public void onError(String response, Exception e) {
-
 			}
 		});
 
